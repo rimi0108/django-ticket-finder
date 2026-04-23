@@ -19,6 +19,20 @@ console = Console()
 # Scoring
 # ---------------------------------------------------------------------------
 
+# Keywords that suggest complex environment setup — penalty applied if found in summary
+_COMPLEX_ENV_KEYWORDS = [
+    "oracle", "sql server", "mssql", "ms sql",
+    "mongodb", "cassandra", "elasticsearch",
+    "docker", "kubernetes", "k8s",
+]
+
+# Keywords that suggest the ticket needs broad community consensus rather than just a patch
+_CONSENSUS_KEYWORDS = [
+    "deprecat", "rfc", "proposal", "design decision",
+    "should we", "bikeshed", "breaking change",
+]
+
+
 def score_ticket(ticket: Ticket) -> tuple[int, list[str]]:
     """Return (score, reasons). Higher score = better candidate."""
     score = 0
@@ -30,7 +44,7 @@ def score_ticket(ticket: Ticket) -> tuple[int, list[str]]:
 
     months = days / 30
 
-    # Vulture strategy sweet spot: 6–24 months
+    # 1. Last-modified score (Vulture strategy)
     if 6 <= months < 12:
         score += 50
         reasons.append(f"수정 {months:.0f}개월 전 (벌처 최적)")
@@ -44,16 +58,42 @@ def score_ticket(ticket: Ticket) -> tuple[int, list[str]]:
         score += 5
         reasons.append(f"수정 {months:.0f}개월 전 (매우 오래됨)")
     else:
-        # < 6 months: too recently active
         score -= 30
         reasons.append(f"수정 {months:.1f}개월 전 (최근 활동 있음 - 주의)")
 
+    # 2. Creation date penalty — old tickets accumulate discussion and are harder to follow
+    if ticket.created:
+        created_years = (datetime.now(timezone.utc) - ticket.created).days / 365
+        if created_years >= 8:
+            score -= 30
+            reasons.append(f"생성 {created_years:.0f}년 전 (너무 오래된 티켓 - 논의 많을 가능성)")
+        elif created_years >= 5:
+            score -= 15
+            reasons.append(f"생성 {created_years:.0f}년 전 (오래된 티켓)")
+
+    # 3. Assignment status
     if ticket.is_unassigned:
         score += 20
         reasons.append("미할당")
     else:
         score -= 10
         reasons.append(f"할당됨: {ticket.owner}")
+
+    # 4. Complex environment setup detection
+    text = (ticket.summary + " " + ticket.component).lower()
+    for kw in _COMPLEX_ENV_KEYWORDS:
+        if kw in text:
+            score -= 25
+            reasons.append(f"복잡한 환경 설정 필요 ({kw})")
+            break
+
+    # 5. Community consensus / design discussion detection
+    summary_lower = ticket.summary.lower()
+    for kw in _CONSENSUS_KEYWORDS:
+        if kw in summary_lower:
+            score -= 20
+            reasons.append(f"커뮤니티 합의 필요 가능성 ({kw})")
+            break
 
     return score, reasons
 
@@ -217,8 +257,12 @@ def _save_markdown_ko(scored, top, path, today):
         "| +35 | 수정 12~24개월 전 (벌처 적합) |",
         "| +15 | 수정 24~48개월 전 |",
         "| +20 | 미할당 티켓 |",
-        "| -30 | 수정 6개월 미만 (최근 활동) |",
         "| -10 | 담당자 있음 |",
+        "| -15 | 생성 5년 이상 (오래된 티켓) |",
+        "| -30 | 생성 8년 이상 (논의 많을 가능성) |",
+        "| -25 | 복잡한 환경 설정 필요 (Oracle 등) |",
+        "| -20 | 커뮤니티 합의 필요 가능성 |",
+        "| -30 | 수정 6개월 미만 (최근 활동) |",
         "",
         "---",
         "",
@@ -275,8 +319,12 @@ def _save_markdown_en(scored, top, path, today):
         "| +35 | Modified 12–24 months ago (Vulture good) |",
         "| +15 | Modified 24–48 months ago (older) |",
         "| +20 | Unassigned |",
-        "| −30 | Modified < 6 months ago (recently active) |",
         "| −10 | Already assigned |",
+        "| −15 | Created 5+ years ago (old ticket) |",
+        "| −30 | Created 8+ years ago (likely heavy discussion) |",
+        "| −25 | Complex environment required (Oracle, etc.) |",
+        "| −20 | Possible community consensus needed |",
+        "| −30 | Modified < 6 months ago (recently active) |",
         "",
         "---",
         "",

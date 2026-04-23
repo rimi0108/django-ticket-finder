@@ -14,8 +14,12 @@
 | +35 | 수정 12~24개월 전 (벌처 적합) |
 | +15 | 수정 24~48개월 전 |
 | +20 | 미할당 티켓 |
-| -30 | 수정 6개월 미만 (최근 활동) |
 | -10 | 담당자 있음 |
+| -15 | 생성 5년 이상 (오래된 티켓) |
+| -30 | 생성 8년 이상 (논의 많을 가능성) |
+| -25 | 복잡한 환경 설정 필요 (Oracle 등) |
+| -20 | 커뮤니티 합의 필요 가능성 |
+| -30 | 수정 6개월 미만 (최근 활동) |
 
 ---
 
@@ -23,157 +27,157 @@
 
 | 순위 | 점수 | 티켓 | 컴포넌트 | 상태 | 마지막 수정 | 비고 |
 |------|------|------|----------|------|-------------|------|
-| 1 | 🟢 70 | [#23268](https://code.djangoproject.com/ticket/23268) Fixtures: Natural Key support for Generic Foreign Keys | Core (Serialization) | new / 미할당 | 2025-06-27 | 수정 10개월 전 (벌처 최적) / 미할당 |
-| 2 | 🟢 70 | [#26223](https://code.djangoproject.com/ticket/26223) Squashing migrations with preserve_default=False keeps the default | Migrations | new / 미할당 | 2025-10-20 | 수정 6개월 전 (벌처 최적) / 미할당 |
-| 3 | 🟢 70 | [#28594](https://code.djangoproject.com/ticket/28594) Value error on related user name during save of user model | contrib.auth | new / 미할당 | 2025-05-15 | 수정 11개월 전 (벌처 최적) / 미할당 |
-| 4 | 🟢 70 | [#28646](https://code.djangoproject.com/ticket/28646) Migration calls "CREATE INDEX" when one already exists when 'unique' field attribute is added (PostgreSQL) | Migrations | new / 미할당 | 2025-08-31 | 수정 8개월 전 (벌처 최적) / 미할당 |
-| 5 | 🟢 70 | [#28944](https://code.djangoproject.com/ticket/28944) Chaining values()/values_list() after QuerySet.select_for_update(of=()) crashes | Database layer (models, ORM) | new / 미할당 | 2025-09-20 | 수정 7개월 전 (벌처 최적) / 미할당 |
-| 6 | 🟡 55 | [#13539](https://code.djangoproject.com/ticket/13539) The delete confirmation page does not check for object-level permissions when building the related list | contrib.admin | new / 미할당 | 2024-11-07 | 수정 18개월 전 (벌처 적합) / 미할당 |
-| 7 | 🟡 55 | [#15130](https://code.djangoproject.com/ticket/15130) Model.validate_unique method doesn't take in account multi-db | Database layer (models, ORM) | new / 미할당 | 2024-05-27 | 수정 23개월 전 (벌처 적합) / 미할당 |
-| 8 | 🟡 55 | [#23251](https://code.djangoproject.com/ticket/23251) Use a temporary folder to store uploaded files during tests | Testing framework | new / 미할당 | 2024-10-15 | 수정 18개월 전 (벌처 적합) / 미할당 |
-| 9 | 🟡 55 | [#26756](https://code.djangoproject.com/ticket/26756) Changing of model's verbose_name does not change the names of the model's permissions | contrib.auth | new / 미할당 | 2025-04-10 | 수정 13개월 전 (벌처 적합) / 미할당 |
-| 10 | 🟡 40 | [#13314](https://code.djangoproject.com/ticket/13314) "FileField" validation does not account for "upload_to" when counting characters | Forms | assigned / Andrew Northall | 2025-05-12 | 수정 12개월 전 (벌처 최적) / 할당됨: Andrew Northall |
-| 11 | 🟡 40 | [#23557](https://code.djangoproject.com/ticket/23557) Prevent silent extension of explicit GROUP BY when using order_by | Database layer (models, ORM) | assigned / ontowhee | 2025-06-07 | 수정 11개월 전 (벌처 최적) / 할당됨: ontowhee |
-| 12 | 🟡 40 | [#25656](https://code.djangoproject.com/ticket/25656) Recent Actions admin section contains link to edit form even when user does not have edit permission | contrib.admin | assigned / AP Jama | 2025-07-20 | 수정 9개월 전 (벌처 최적) / 할당됨: AP Jama |
-| 13 | 🟡 40 | [#25991](https://code.djangoproject.com/ticket/25991) A new implementation for exclude() queries | Database layer (models, ORM) | assigned / Eddy ADEGNANDJOU | 2025-05-19 | 수정 11개월 전 (벌처 최적) / 할당됨: Eddy ADEGNANDJOU |
-| 14 | 🟡 40 | [#26619](https://code.djangoproject.com/ticket/26619) BaseCache incr method will reset the timeout | Core (Cache system) | assigned / Simone Macri | 2025-09-19 | 수정 7개월 전 (벌처 최적) / 할당됨: Simone Macri |
-| 15 | 🟡 40 | [#27775](https://code.djangoproject.com/ticket/27775) Signed cookies does not support custom expiry | contrib.sessions | assigned / Abe Hanoka | 2025-08-26 | 수정 8개월 전 (벌처 최적) / 할당됨: Abe Hanoka |
+| 1 | 🟡 40 | [#23268](https://code.djangoproject.com/ticket/23268) Fixtures: Natural Key support for Generic Foreign Keys | Core (Serialization) | new / 미할당 | 2025-06-27 | 수정 10개월 전 (벌처 최적) / 생성 12년 전 (너무 오래된 티켓 - 논의 많을 가능성) / 미할당 |
+| 2 | 🟡 40 | [#26223](https://code.djangoproject.com/ticket/26223) Squashing migrations with preserve_default=False keeps the default | Migrations | new / 미할당 | 2025-10-20 | 수정 6개월 전 (벌처 최적) / 생성 10년 전 (너무 오래된 티켓 - 논의 많을 가능성) / 미할당 |
+| 3 | 🟡 40 | [#28594](https://code.djangoproject.com/ticket/28594) Value error on related user name during save of user model | contrib.auth | new / 미할당 | 2025-05-15 | 수정 11개월 전 (벌처 최적) / 생성 9년 전 (너무 오래된 티켓 - 논의 많을 가능성) / 미할당 |
+| 4 | 🟡 40 | [#28646](https://code.djangoproject.com/ticket/28646) Migration calls "CREATE INDEX" when one already exists when 'unique' field attribute is added (PostgreSQL) | Migrations | new / 미할당 | 2025-08-31 | 수정 8개월 전 (벌처 최적) / 생성 9년 전 (너무 오래된 티켓 - 논의 많을 가능성) / 미할당 |
+| 5 | 🟡 40 | [#28944](https://code.djangoproject.com/ticket/28944) Chaining values()/values_list() after QuerySet.select_for_update(of=()) crashes | Database layer (models, ORM) | new / 미할당 | 2025-09-20 | 수정 7개월 전 (벌처 최적) / 생성 8년 전 (너무 오래된 티켓 - 논의 많을 가능성) / 미할당 |
+| 6 | 🟡 40 | [#33450](https://code.djangoproject.com/ticket/33450) Integer primary key is wrongly casted to UUID when filtering GenericRelation on model with UUID primary key. | contrib.contenttypes | assigned / Clifford Gama | 2025-05-20 | 수정 11개월 전 (벌처 최적) / 할당됨: Clifford Gama |
+| 7 | 🟡 40 | [#35333](https://code.djangoproject.com/ticket/35333) Template tag `unlocalize` does not work with `date` and `time` filters. | Template system | assigned / Ahmed Nassar | 2025-05-20 | 수정 11개월 전 (벌처 최적) / 할당됨: Ahmed Nassar |
+| 8 | 🟡 40 | [#35673](https://code.djangoproject.com/ticket/35673) ExceptionReporter.get_traceback_data() does not handle when request.GET data exceeds DATA_UPLOAD_MAX_NUMBER_FIELDS | Error reporting | assigned / Ahmed Nassar | 2025-08-11 | 수정 8개월 전 (벌처 최적) / 할당됨: Ahmed Nassar |
+| 9 | 🟡 40 | [#35902](https://code.djangoproject.com/ticket/35902) migrate --syncdb and TEST_MIGRATE break for models with fields requiring extensions, and custom collation or types on Postgres | Migrations | assigned / wadhah mahrouk | 2025-05-07 | 수정 12개월 전 (벌처 최적) / 할당됨: wadhah mahrouk |
+| 10 | 🟡 40 | [#35911](https://code.djangoproject.com/ticket/35911) FilteredSelectMultiple Widget Not Functional in Inline Formset After Form Deletion | contrib.admin | assigned / Antoliny | 2025-08-01 | 수정 9개월 전 (벌처 최적) / 할당됨: Antoliny |
+| 11 | 🟡 40 | [#36168](https://code.djangoproject.com/ticket/36168) Backwards migration to replaced migration when other app has squashed migrations can lead to FieldDoesNotExist error due to incorrect state | Migrations | assigned / houston0222 | 2025-09-29 | 수정 7개월 전 (벌처 최적) / 할당됨: houston0222 |
+| 12 | 🟡 40 | [#36248](https://code.djangoproject.com/ticket/36248) Bulk deletion of model referred to by a SET_NULL key can exceed parameter limit | Database layer (models, ORM) | assigned / bobince | 2025-09-25 | 수정 7개월 전 (벌처 최적) / 할당됨: bobince |
+| 13 | 🟡 40 | [#36259](https://code.djangoproject.com/ticket/36259) Unsaved related object with primary_key=True field does not raise unsaved object error | Database layer (models, ORM) | assigned / Clifford Gama | 2025-06-07 | 수정 11개월 전 (벌처 최적) / 할당됨: Clifford Gama |
+| 14 | 🟡 40 | [#36336](https://code.djangoproject.com/ticket/36336) Incorrect size of first autocomple in Inlines with "collapse" class (on chromium based browsers?) | contrib.admin | assigned / yassershkeir | 2025-07-14 | 수정 9개월 전 (벌처 최적) / 할당됨: yassershkeir |
+| 15 | 🟡 40 | [#36472](https://code.djangoproject.com/ticket/36472) GeneratedField(primary_key=True) crashes on create(), and other issues | Database layer (models, ORM) | assigned / David Sanders | 2025-08-13 | 수정 8개월 전 (벌처 최적) / 할당됨: David Sanders |
 
 ---
 
 ## 상세
 
-### 1. [🟢 #23268] Fixtures: Natural Key support for Generic Foreign Keys
+### 1. [🟡 #23268] Fixtures: Natural Key support for Generic Foreign Keys
 
 - **링크**: https://code.djangoproject.com/ticket/23268
 - **컴포넌트**: Core (Serialization)
 - **상태**: new / 미할당
 - **마지막 수정**: 2025-06-27
 - **생성일**: 2014-08-11
-- **점수**: 70 (수정 10개월 전 (벌처 최적) | 미할당)
+- **점수**: 40 (수정 10개월 전 (벌처 최적) | 생성 12년 전 (너무 오래된 티켓 - 논의 많을 가능성) | 미할당)
 
-### 2. [🟢 #26223] Squashing migrations with preserve_default=False keeps the default
+### 2. [🟡 #26223] Squashing migrations with preserve_default=False keeps the default
 
 - **링크**: https://code.djangoproject.com/ticket/26223
 - **컴포넌트**: Migrations
 - **상태**: new / 미할당
 - **마지막 수정**: 2025-10-20
 - **생성일**: 2016-02-15
-- **점수**: 70 (수정 6개월 전 (벌처 최적) | 미할당)
+- **점수**: 40 (수정 6개월 전 (벌처 최적) | 생성 10년 전 (너무 오래된 티켓 - 논의 많을 가능성) | 미할당)
 
-### 3. [🟢 #28594] Value error on related user name during save of user model
+### 3. [🟡 #28594] Value error on related user name during save of user model
 
 - **링크**: https://code.djangoproject.com/ticket/28594
 - **컴포넌트**: contrib.auth
 - **상태**: new / 미할당
 - **마지막 수정**: 2025-05-15
 - **생성일**: 2017-09-13
-- **점수**: 70 (수정 11개월 전 (벌처 최적) | 미할당)
+- **점수**: 40 (수정 11개월 전 (벌처 최적) | 생성 9년 전 (너무 오래된 티켓 - 논의 많을 가능성) | 미할당)
 
-### 4. [🟢 #28646] Migration calls "CREATE INDEX" when one already exists when 'unique' field attribute is added (PostgreSQL)
+### 4. [🟡 #28646] Migration calls "CREATE INDEX" when one already exists when 'unique' field attribute is added (PostgreSQL)
 
 - **링크**: https://code.djangoproject.com/ticket/28646
 - **컴포넌트**: Migrations
 - **상태**: new / 미할당
 - **마지막 수정**: 2025-08-31
 - **생성일**: 2017-09-27
-- **점수**: 70 (수정 8개월 전 (벌처 최적) | 미할당)
+- **점수**: 40 (수정 8개월 전 (벌처 최적) | 생성 9년 전 (너무 오래된 티켓 - 논의 많을 가능성) | 미할당)
 
-### 5. [🟢 #28944] Chaining values()/values_list() after QuerySet.select_for_update(of=()) crashes
+### 5. [🟡 #28944] Chaining values()/values_list() after QuerySet.select_for_update(of=()) crashes
 
 - **링크**: https://code.djangoproject.com/ticket/28944
 - **컴포넌트**: Database layer (models, ORM)
 - **상태**: new / 미할당
 - **마지막 수정**: 2025-09-20
 - **생성일**: 2017-12-19
-- **점수**: 70 (수정 7개월 전 (벌처 최적) | 미할당)
+- **점수**: 40 (수정 7개월 전 (벌처 최적) | 생성 8년 전 (너무 오래된 티켓 - 논의 많을 가능성) | 미할당)
 
-### 6. [🟡 #13539] The delete confirmation page does not check for object-level permissions when building the related list
+### 6. [🟡 #33450] Integer primary key is wrongly casted to UUID when filtering GenericRelation on model with UUID primary key.
 
-- **링크**: https://code.djangoproject.com/ticket/13539
+- **링크**: https://code.djangoproject.com/ticket/33450
+- **컴포넌트**: contrib.contenttypes
+- **상태**: assigned / Clifford Gama
+- **마지막 수정**: 2025-05-20
+- **생성일**: 2022-01-19
+- **점수**: 40 (수정 11개월 전 (벌처 최적) | 할당됨: Clifford Gama)
+
+### 7. [🟡 #35333] Template tag `unlocalize` does not work with `date` and `time` filters.
+
+- **링크**: https://code.djangoproject.com/ticket/35333
+- **컴포넌트**: Template system
+- **상태**: assigned / Ahmed Nassar
+- **마지막 수정**: 2025-05-20
+- **생성일**: 2024-03-26
+- **점수**: 40 (수정 11개월 전 (벌처 최적) | 할당됨: Ahmed Nassar)
+
+### 8. [🟡 #35673] ExceptionReporter.get_traceback_data() does not handle when request.GET data exceeds DATA_UPLOAD_MAX_NUMBER_FIELDS
+
+- **링크**: https://code.djangoproject.com/ticket/35673
+- **컴포넌트**: Error reporting
+- **상태**: assigned / Ahmed Nassar
+- **마지막 수정**: 2025-08-11
+- **생성일**: 2024-08-13
+- **점수**: 40 (수정 8개월 전 (벌처 최적) | 할당됨: Ahmed Nassar)
+
+### 9. [🟡 #35902] migrate --syncdb and TEST_MIGRATE break for models with fields requiring extensions, and custom collation or types on Postgres
+
+- **링크**: https://code.djangoproject.com/ticket/35902
+- **컴포넌트**: Migrations
+- **상태**: assigned / wadhah mahrouk
+- **마지막 수정**: 2025-05-07
+- **생성일**: 2024-11-10
+- **점수**: 40 (수정 12개월 전 (벌처 최적) | 할당됨: wadhah mahrouk)
+
+### 10. [🟡 #35911] FilteredSelectMultiple Widget Not Functional in Inline Formset After Form Deletion
+
+- **링크**: https://code.djangoproject.com/ticket/35911
 - **컴포넌트**: contrib.admin
-- **상태**: new / 미할당
-- **마지막 수정**: 2024-11-07
-- **생성일**: 2010-05-14
-- **점수**: 55 (수정 18개월 전 (벌처 적합) | 미할당)
+- **상태**: assigned / Antoliny
+- **마지막 수정**: 2025-08-01
+- **생성일**: 2024-11-14
+- **점수**: 40 (수정 9개월 전 (벌처 최적) | 할당됨: Antoliny)
 
-### 7. [🟡 #15130] Model.validate_unique method doesn't take in account multi-db
+### 11. [🟡 #36168] Backwards migration to replaced migration when other app has squashed migrations can lead to FieldDoesNotExist error due to incorrect state
 
-- **링크**: https://code.djangoproject.com/ticket/15130
+- **링크**: https://code.djangoproject.com/ticket/36168
+- **컴포넌트**: Migrations
+- **상태**: assigned / houston0222
+- **마지막 수정**: 2025-09-29
+- **생성일**: 2025-02-04
+- **점수**: 40 (수정 7개월 전 (벌처 최적) | 할당됨: houston0222)
+
+### 12. [🟡 #36248] Bulk deletion of model referred to by a SET_NULL key can exceed parameter limit
+
+- **링크**: https://code.djangoproject.com/ticket/36248
 - **컴포넌트**: Database layer (models, ORM)
-- **상태**: new / 미할당
-- **마지막 수정**: 2024-05-27
-- **생성일**: 2011-01-20
-- **점수**: 55 (수정 23개월 전 (벌처 적합) | 미할당)
+- **상태**: assigned / bobince
+- **마지막 수정**: 2025-09-25
+- **생성일**: 2025-03-11
+- **점수**: 40 (수정 7개월 전 (벌처 최적) | 할당됨: bobince)
 
-### 8. [🟡 #23251] Use a temporary folder to store uploaded files during tests
+### 13. [🟡 #36259] Unsaved related object with primary_key=True field does not raise unsaved object error
 
-- **링크**: https://code.djangoproject.com/ticket/23251
-- **컴포넌트**: Testing framework
-- **상태**: new / 미할당
-- **마지막 수정**: 2024-10-15
-- **생성일**: 2014-08-06
-- **점수**: 55 (수정 18개월 전 (벌처 적합) | 미할당)
-
-### 9. [🟡 #26756] Changing of model's verbose_name does not change the names of the model's permissions
-
-- **링크**: https://code.djangoproject.com/ticket/26756
-- **컴포넌트**: contrib.auth
-- **상태**: new / 미할당
-- **마지막 수정**: 2025-04-10
-- **생성일**: 2016-06-14
-- **점수**: 55 (수정 13개월 전 (벌처 적합) | 미할당)
-
-### 10. [🟡 #13314] "FileField" validation does not account for "upload_to" when counting characters
-
-- **링크**: https://code.djangoproject.com/ticket/13314
-- **컴포넌트**: Forms
-- **상태**: assigned / Andrew Northall
-- **마지막 수정**: 2025-05-12
-- **생성일**: 2010-04-09
-- **점수**: 40 (수정 12개월 전 (벌처 최적) | 할당됨: Andrew Northall)
-
-### 11. [🟡 #23557] Prevent silent extension of explicit GROUP BY when using order_by
-
-- **링크**: https://code.djangoproject.com/ticket/23557
+- **링크**: https://code.djangoproject.com/ticket/36259
 - **컴포넌트**: Database layer (models, ORM)
-- **상태**: assigned / ontowhee
+- **상태**: assigned / Clifford Gama
 - **마지막 수정**: 2025-06-07
-- **생성일**: 2014-09-25
-- **점수**: 40 (수정 11개월 전 (벌처 최적) | 할당됨: ontowhee)
+- **생성일**: 2025-03-16
+- **점수**: 40 (수정 11개월 전 (벌처 최적) | 할당됨: Clifford Gama)
 
-### 12. [🟡 #25656] Recent Actions admin section contains link to edit form even when user does not have edit permission
+### 14. [🟡 #36336] Incorrect size of first autocomple in Inlines with "collapse" class (on chromium based browsers?)
 
-- **링크**: https://code.djangoproject.com/ticket/25656
+- **링크**: https://code.djangoproject.com/ticket/36336
 - **컴포넌트**: contrib.admin
-- **상태**: assigned / AP Jama
-- **마지막 수정**: 2025-07-20
-- **생성일**: 2015-10-31
-- **점수**: 40 (수정 9개월 전 (벌처 최적) | 할당됨: AP Jama)
+- **상태**: assigned / yassershkeir
+- **마지막 수정**: 2025-07-14
+- **생성일**: 2025-04-19
+- **점수**: 40 (수정 9개월 전 (벌처 최적) | 할당됨: yassershkeir)
 
-### 13. [🟡 #25991] A new implementation for exclude() queries
+### 15. [🟡 #36472] GeneratedField(primary_key=True) crashes on create(), and other issues
 
-- **링크**: https://code.djangoproject.com/ticket/25991
+- **링크**: https://code.djangoproject.com/ticket/36472
 - **컴포넌트**: Database layer (models, ORM)
-- **상태**: assigned / Eddy ADEGNANDJOU
-- **마지막 수정**: 2025-05-19
-- **생성일**: 2015-12-28
-- **점수**: 40 (수정 11개월 전 (벌처 최적) | 할당됨: Eddy ADEGNANDJOU)
-
-### 14. [🟡 #26619] BaseCache incr method will reset the timeout
-
-- **링크**: https://code.djangoproject.com/ticket/26619
-- **컴포넌트**: Core (Cache system)
-- **상태**: assigned / Simone Macri
-- **마지막 수정**: 2025-09-19
-- **생성일**: 2016-05-16
-- **점수**: 40 (수정 7개월 전 (벌처 최적) | 할당됨: Simone Macri)
-
-### 15. [🟡 #27775] Signed cookies does not support custom expiry
-
-- **링크**: https://code.djangoproject.com/ticket/27775
-- **컴포넌트**: contrib.sessions
-- **상태**: assigned / Abe Hanoka
-- **마지막 수정**: 2025-08-26
-- **생성일**: 2017-01-25
-- **점수**: 40 (수정 8개월 전 (벌처 최적) | 할당됨: Abe Hanoka)
+- **상태**: assigned / David Sanders
+- **마지막 수정**: 2025-08-13
+- **생성일**: 2025-06-18
+- **점수**: 40 (수정 8개월 전 (벌처 최적) | 할당됨: David Sanders)
