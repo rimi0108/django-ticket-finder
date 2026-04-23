@@ -430,8 +430,8 @@ def parse_args() -> argparse.Namespace:
                         help="결과를 마크다운 파일로 저장 (예: good-tickets.md)")
     parser.add_argument("--lang", type=str, default="ko", choices=["ko", "en"],
                         help="마크다운 출력 언어 (ko / en)")
-    parser.add_argument("--details", action="store_true",
-                        help="티켓 상세 페이지에서 댓글 수를 가져와 스코어에 반영")
+    parser.add_argument("--no-details", action="store_true",
+                        help="댓글 수 조회 생략 (빠른 실행)")
     return parser.parse_args()
 
 
@@ -473,7 +473,7 @@ def main() -> None:
         reverse=True,
     )
 
-    if args.details:
+    if not args.no_details:
         # 상위 후보만 상세 조회 (서버 rate limit 방지를 위해 순차 요청)
         candidates = [t for _, _, t in scored[:args.top * 2]]
         console.print(
