@@ -65,18 +65,21 @@ def score_ticket(ticket: Ticket) -> tuple[int, list[str]]:
     if ticket.created:
         created_years = (datetime.now(timezone.utc) - ticket.created).days / 365
         if created_years >= 8:
-            score -= 30
+            score -= 40
             reasons.append(f"생성 {created_years:.0f}년 전 (너무 오래된 티켓 - 논의 많을 가능성)")
         elif created_years >= 5:
-            score -= 15
+            score -= 20
             reasons.append(f"생성 {created_years:.0f}년 전 (오래된 티켓)")
+        elif created_years >= 3:
+            score -= 5
+            reasons.append(f"생성 {created_years:.0f}년 전")
 
-    # 3. Assignment status
+    # 3. Assignment status — unassigned is the strongest positive signal
     if ticket.is_unassigned:
-        score += 20
+        score += 35
         reasons.append("미할당")
     else:
-        score -= 10
+        score -= 25
         reasons.append(f"할당됨: {ticket.owner}")
 
     # 4. Complex environment setup detection
@@ -256,10 +259,11 @@ def _save_markdown_ko(scored, top, path, today):
         "| +50 | 수정 6~12개월 전 (벌처 최적) |",
         "| +35 | 수정 12~24개월 전 (벌처 적합) |",
         "| +15 | 수정 24~48개월 전 |",
-        "| +20 | 미할당 티켓 |",
-        "| -10 | 담당자 있음 |",
-        "| -15 | 생성 5년 이상 (오래된 티켓) |",
-        "| -30 | 생성 8년 이상 (논의 많을 가능성) |",
+        "| +35 | 미할당 티켓 |",
+        "| -25 | 담당자 있음 |",
+        "| -5  | 생성 3년 이상 |",
+        "| -20 | 생성 5년 이상 (오래된 티켓) |",
+        "| -40 | 생성 8년 이상 (논의 많을 가능성) |",
         "| -25 | 복잡한 환경 설정 필요 (Oracle 등) |",
         "| -20 | 커뮤니티 합의 필요 가능성 |",
         "| -30 | 수정 6개월 미만 (최근 활동) |",
@@ -318,10 +322,11 @@ def _save_markdown_en(scored, top, path, today):
         "| +50 | Modified 6–12 months ago (Vulture sweet spot) |",
         "| +35 | Modified 12–24 months ago (Vulture good) |",
         "| +15 | Modified 24–48 months ago (older) |",
-        "| +20 | Unassigned |",
-        "| −10 | Already assigned |",
-        "| −15 | Created 5+ years ago (old ticket) |",
-        "| −30 | Created 8+ years ago (likely heavy discussion) |",
+        "| +35 | Unassigned |",
+        "| −25 | Already assigned |",
+        "| −5  | Created 3+ years ago |",
+        "| −20 | Created 5+ years ago (old ticket) |",
+        "| −40 | Created 8+ years ago (likely heavy discussion) |",
         "| −25 | Complex environment required (Oracle, etc.) |",
         "| −20 | Possible community consensus needed |",
         "| −30 | Modified < 6 months ago (recently active) |",
