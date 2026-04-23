@@ -2,7 +2,8 @@ import csv
 import io
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -23,6 +24,8 @@ class Ticket:
     modified: Optional[datetime]
     created: Optional[datetime]
     url: str
+    version: str = ""
+    num_comments: int = -1  # -1 = not fetched yet
 
     @property
     def is_unassigned(self) -> bool:
@@ -33,6 +36,12 @@ class Ticket:
         if not self.modified:
             return None
         return (datetime.now(timezone.utc) - self.modified).days
+
+    @property
+    def created_years_ago(self) -> Optional[float]:
+        if not self.created:
+            return None
+        return (datetime.now(timezone.utc) - self.created).days / 365
 
 
 def _parse_date(date_str: str) -> Optional[datetime]:
@@ -64,8 +73,9 @@ def fetch_tickets(
         ("col", "status"),
         ("col", "owner"),
         ("col", "component"),
+        ("col", "version"),
         ("col", "changetime"),  # "Modified" column in CSV
-        ("col", "time"),         # "Created" column in CSV
+        ("col", "time"),        # "Created" column in CSV
     ]
     if has_patch:
         params.append(("has_patch", "1"))
@@ -73,7 +83,7 @@ def fetch_tickets(
         params.append(("patch_needs_improvement", "1"))
 
     url = f"{TRAC_QUERY}?{urllib.parse.urlencode(params)}"
-    req = urllib.request.Request(url, headers={"User-Agent": "pick-good-django-ticket/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "django-ticket-finder/1.0"})
     with urllib.request.urlopen(req, timeout=30) as response:
         content = response.read().decode("utf-8-sig")  # strip BOM if present
 
@@ -95,7 +105,35 @@ def fetch_tickets(
                 modified=_parse_date(row.get("Modified", "")),
                 created=_parse_date(row.get("Created", "")),
                 url=f"{TRAC_BASE}/ticket/{ticket_id}",
+                version=row.get("Version", "").strip(),
             )
         )
 
     return tickets
+
+
+def fetch_comment_count(ticket_id: int) -> int:
+    """Scrape a ticket page and count the number of comments."""
+    url = f"{TRAC_BASE}/ticket/{ticket_id}"
+    req = urllib.request.Request(url, headers={"User-Agent": "django-ticket-finder/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            html = response.read().decode("utf-8", errors="ignore")
+        return html.count('id="comment:')
+    except Exception:
+        return 0
+
+
+def enrich_with_comments(
+    tickets: list[Ticket],
+    delay: float = 0.5,
+    progress_callback=None,
+) -> None:
+    """Fetch comment counts sequentially to avoid rate limiting."""
+    import time
+    for i, ticket in enumerate(tickets):
+        ticket.num_comments = fetch_comment_count(ticket.id)
+        if progress_callback:
+            progress_callback(i + 1, len(tickets))
+        if i < len(tickets) - 1:
+            time.sleep(delay)

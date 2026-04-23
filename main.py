@@ -10,7 +10,7 @@ from rich.table import Table
 from rich import box
 from rich.text import Text
 
-from trac import Ticket, fetch_tickets
+from trac import Ticket, fetch_tickets, enrich_with_comments
 
 console = Console()
 
@@ -30,6 +30,7 @@ _COMPLEX_ENV_KEYWORDS = [
 _CONSENSUS_KEYWORDS = [
     "deprecat", "rfc", "proposal", "design decision",
     "should we", "bikeshed", "breaking change",
+    "architecture", "separation of concern",
 ]
 
 
@@ -98,6 +99,31 @@ def score_ticket(ticket: Ticket) -> tuple[int, list[str]]:
             reasons.append(f"커뮤니티 합의 필요 가능성 ({kw})")
             break
 
+    # 6. Django version filed against (old version = likely long-standing complex issue)
+    if ticket.version:
+        major = ticket.version.split(".")[0]
+        if major == "1":
+            score -= 15
+            reasons.append(f"Django {ticket.version} 기준 제출 (구버전)")
+        elif major == "2":
+            score -= 5
+            reasons.append(f"Django {ticket.version} 기준 제출")
+
+    # 7. Comment count (fetched separately via --details)
+    if ticket.num_comments >= 0:
+        if ticket.num_comments >= 30:
+            score -= 45
+            reasons.append(f"댓글 {ticket.num_comments}개 (논의 매우 복잡 — 피할 것)")
+        elif ticket.num_comments >= 15:
+            score -= 25
+            reasons.append(f"댓글 {ticket.num_comments}개 (논의 복잡)")
+        elif ticket.num_comments >= 8:
+            score -= 10
+            reasons.append(f"댓글 {ticket.num_comments}개")
+        else:
+            score += 5
+            reasons.append(f"댓글 {ticket.num_comments}개 (논의 적음)")
+
     return score, reasons
 
 
@@ -162,27 +188,36 @@ def display_tickets(scored: list[tuple[int, list[str], Ticket]], top_n: int) -> 
         title=f"[bold]Django 기여 추천 티켓 Top {min(top_n, len(scored))}[/bold]",
         title_style="bold white",
     )
+    has_comments = any(t.num_comments >= 0 for _, _, t in scored[:top_n])
+
     table.add_column("점수", justify="center", width=6)
     table.add_column("ID", justify="right", width=7)
-    table.add_column("요약", width=52)
-    table.add_column("컴포넌트", width=22)
-    table.add_column("상태/담당자", width=16)
-    table.add_column("마지막 수정", width=12)
+    table.add_column("요약", width=46)
+    table.add_column("컴포넌트", width=18)
+    table.add_column("상태/담당자", width=14)
+    table.add_column("수정", width=10)
+    if has_comments:
+        table.add_column("댓글", justify="center", width=5)
 
     for score, reasons, ticket in scored[:top_n]:
         color = _score_color(score)
-        owner_label = "미할당" if ticket.is_unassigned else ticket.owner[:14]
+        owner_label = "미할당" if ticket.is_unassigned else ticket.owner[:12]
         status_text = f"{ticket.status}\n[dim]{owner_label}[/dim]"
-        summary = ticket.summary if len(ticket.summary) <= 52 else ticket.summary[:49] + "..."
+        summary = ticket.summary if len(ticket.summary) <= 46 else ticket.summary[:43] + "..."
 
-        table.add_row(
+        row = [
             Text(str(score), style=f"bold {color}"),
             f"[link={ticket.url}]#{ticket.id}[/link]",
             summary,
-            ticket.component[:22],
+            ticket.component[:18],
             status_text,
             _age_label(ticket.modified_days_ago),
-        )
+        ]
+        if has_comments:
+            c = ticket.num_comments
+            comment_color = "red" if c >= 30 else "yellow" if c >= 15 else "green"
+            row.append(Text(str(c) if c >= 0 else "?", style=comment_color))
+        table.add_row(*row)
 
     console.print()
     console.print(table)
@@ -395,6 +430,8 @@ def parse_args() -> argparse.Namespace:
                         help="결과를 마크다운 파일로 저장 (예: good-tickets.md)")
     parser.add_argument("--lang", type=str, default="ko", choices=["ko", "en"],
                         help="마크다운 출력 언어 (ko / en)")
+    parser.add_argument("--details", action="store_true",
+                        help="티켓 상세 페이지에서 댓글 수를 가져와 스코어에 반영")
     return parser.parse_args()
 
 
@@ -429,12 +466,32 @@ def main() -> None:
         console.print("[yellow]조건에 맞는 티켓이 없습니다. --min-age 또는 --max-age를 조정해보세요.[/yellow]")
         sys.exit(0)
 
-    scored = []
-    for ticket in filtered:
-        score, reasons = score_ticket(ticket)
-        scored.append((score, reasons, ticket))
+    # 1차 스코어링 (댓글 수 제외)
+    scored = sorted(
+        [(score_ticket(t)[0], score_ticket(t)[1], t) for t in filtered],
+        key=lambda x: x[0],
+        reverse=True,
+    )
 
-    scored.sort(key=lambda x: x[0], reverse=True)
+    if args.details:
+        # 상위 후보만 상세 조회 (서버 rate limit 방지를 위해 순차 요청)
+        candidates = [t for _, _, t in scored[:args.top * 2]]
+        console.print(
+            f"상위 {len(candidates)}개 티켓 댓글 수 확인 중",
+            end="",
+        )
+        def _progress(done, total):
+            if done % 5 == 0 or done == total:
+                console.print(f" {done}/{total}", end="", highlight=False)
+        enrich_with_comments(candidates, delay=0.4, progress_callback=_progress)
+        console.print(" [green]완료[/green]")
+
+        # 댓글 수 반영해서 재스코어링
+        scored = sorted(
+            [(score_ticket(t)[0], score_ticket(t)[1], t) for t in filtered],
+            key=lambda x: x[0],
+            reverse=True,
+        )
 
     console.print(f"필터 결과: [bold]{len(filtered)}개[/bold] 티켓 (수정 {args.min_age:.0f}–{args.max_age:.0f}개월 전)")
 
