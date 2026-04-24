@@ -96,6 +96,10 @@ pip install -r requirements.txt
 # Basic run — Top 15 tickets using Vulture strategy
 python main.py
 
+# Easy Pickings mode — tickets explicitly marked "beginner-friendly" by maintainers
+python main.py --easy-pickings
+python main.py --easy-pickings --top 10 --md easy-tickets.md
+
 # Show only unassigned tickets
 python main.py --unassigned-only
 
@@ -131,6 +135,7 @@ python main.py --unassigned-only --component admin --top 5 --md admin-tickets.md
 | `--component KEYWORD` | — | Filter by component name (partial match) |
 | `--max-fetch N` | `500` | Max tickets to fetch from Trac |
 | `--no-patch-filter` | false | Disable has_patch / patch_needs_improvement filter |
+| `--easy-pickings` | false | Search tickets marked "easy pickings" by Django maintainers |
 | `--md FILE` | — | Save results as a Markdown file |
 | `--lang` | `ko` | Markdown language: `ko` (Korean) or `en` (English) |
 

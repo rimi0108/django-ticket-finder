@@ -106,16 +106,17 @@ def _parse_date(date_str: str) -> Optional[datetime]:
 def fetch_tickets(
     *,
     ticket_type: str = "Bug",
-    stage: str = "Accepted",
+    stage: str | list[str] = "Accepted",
     has_patch: bool = True,
     patch_needs_improvement: bool = True,
+    easy_pickings: bool = False,
     max_results: int = 500,
 ) -> list[Ticket]:
+    stages = [stage] if isinstance(stage, str) else stage
     params = [
         ("status", "new"),
         ("status", "assigned"),
         ("type", ticket_type),
-        ("stage", stage),
         ("format", "csv"),
         ("max", str(max_results)),
         ("col", "id"),
@@ -127,10 +128,14 @@ def fetch_tickets(
         ("col", "changetime"),
         ("col", "time"),
     ]
+    for s in stages:
+        params.append(("stage", s))
     if has_patch:
         params.append(("has_patch", "1"))
     if patch_needs_improvement:
         params.append(("patch_needs_improvement", "1"))
+    if easy_pickings:
+        params.append(("easy_pickings", "1"))
 
     url = f"{TRAC_QUERY}?{urllib.parse.urlencode(params)}"
     req = urllib.request.Request(url, headers={"User-Agent": "django-ticket-finder/1.0"})

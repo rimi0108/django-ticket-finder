@@ -189,12 +189,14 @@ def _score_color(score: int) -> str:
     return "red"
 
 
-def display_tickets(scored: list[tuple[int, list[str], Ticket]], top_n: int) -> None:
+def display_tickets(scored: list[tuple[int, list[str], Ticket]], top_n: int, title: str | None = None) -> None:
+    top = min(top_n, len(scored))
+    table_title = title or f"Django 기여 추천 티켓 Top {top}"
     table = Table(
         box=box.ROUNDED,
         show_header=True,
         header_style="bold cyan",
-        title=f"[bold]Django 기여 추천 티켓 Top {min(top_n, len(scored))}[/bold]",
+        title=f"[bold]{table_title}[/bold]",
         title_style="bold white",
     )
     has_comments = any(t.num_comments >= 0 for _, _, t in scored[:top_n])
@@ -521,20 +523,38 @@ def parse_args() -> argparse.Namespace:
                         help="마크다운 출력 언어 (ko / en)")
     parser.add_argument("--no-details", action="store_true",
                         help="댓글 수 조회 생략 (빠른 실행)")
+    parser.add_argument("--easy-pickings", action="store_true",
+                        help="Django 메인테이너가 '초보자 가능'으로 표시한 티켓만 검색")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    has_patch = not args.no_patch_filter
-    patch_needs_improvement = not args.no_patch_filter
+    easy_pickings_mode = args.easy_pickings
+
+    if easy_pickings_mode:
+        has_patch = False
+        patch_needs_improvement = False
+        stages = ["Accepted", "Unreviewed"]
+        # easy pickings는 새 티켓도 포함하므로 기본 min_age를 0으로
+        min_age = 0.0 if args.min_age == 6.0 else args.min_age
+        max_age = args.max_age
+        console.print("[bold cyan]Easy Pickings 모드[/bold cyan]: 메인테이너가 '초보자 가능'으로 표시한 티켓을 검색합니다.")
+    else:
+        has_patch = not args.no_patch_filter
+        patch_needs_improvement = not args.no_patch_filter
+        stages = "Accepted"
+        min_age = args.min_age
+        max_age = args.max_age
 
     console.print("[bold]Django Trac에서 티켓을 가져오는 중...[/bold]", end=" ")
 
     try:
         tickets = fetch_tickets(
+            stage=stages,
             has_patch=has_patch,
             patch_needs_improvement=patch_needs_improvement,
+            easy_pickings=easy_pickings_mode,
             max_results=args.max_fetch,
         )
     except Exception as e:
@@ -545,8 +565,8 @@ def main() -> None:
 
     filtered = filter_tickets(
         tickets,
-        min_age_months=args.min_age,
-        max_age_months=args.max_age,
+        min_age_months=min_age,
+        max_age_months=max_age,
         unassigned_only=args.unassigned_only,
         component=args.component,
     )
@@ -584,13 +604,22 @@ def main() -> None:
 
     console.print(f"필터 결과: [bold]{len(filtered)}개[/bold] 티켓 (수정 {args.min_age:.0f}–{args.max_age:.0f}개월 전)")
 
-    display_tickets(scored, top_n=args.top)
+    if easy_pickings_mode:
+        display_tickets(scored, top_n=args.top, title=f"Easy Pickings 추천 티켓 Top {min(args.top, len(scored))}")
+    else:
+        display_tickets(scored, top_n=args.top)
 
-    console.print(
-        f"\n[dim]전체 결과: https://code.djangoproject.com/query?"
-        f"status=new&status=assigned&type=Bug&stage=Accepted"
-        f"{'&has_patch=1&patch_needs_improvement=1' if has_patch else ''}[/dim]\n"
-    )
+    if easy_pickings_mode:
+        console.print(
+            "\n[dim]전체 결과: https://code.djangoproject.com/query?"
+            "status=new&status=assigned&type=Bug&easy_pickings=1[/dim]\n"
+        )
+    else:
+        console.print(
+            f"\n[dim]전체 결과: https://code.djangoproject.com/query?"
+            f"status=new&status=assigned&type=Bug&stage=Accepted"
+            f"{'&has_patch=1&patch_needs_improvement=1' if has_patch else ''}[/dim]\n"
+        )
 
     if args.md:
         save_markdown(scored, top_n=args.top, path=args.md, lang=args.lang)
