@@ -552,7 +552,7 @@ def main() -> None:
         stages = ["Accepted", "Unreviewed"]
         # easy pickings는 새 티켓도 포함하므로 기본 min_age를 0으로
         min_age = 0.0 if args.min_age == 6.0 else args.min_age
-        max_age = args.max_age
+        max_age = args.max_age if args.max_age != 48.0 else 9999.0  # 나이 제한 없이 전체
         console.print("[bold cyan]Easy Pickings 모드[/bold cyan]: 메인테이너가 '초보자 가능'으로 표시한 티켓을 검색합니다.")
     else:
         has_patch = not args.no_patch_filter
@@ -616,7 +616,8 @@ def main() -> None:
             reverse=True,
         )
 
-    console.print(f"필터 결과: [bold]{len(filtered)}개[/bold] 티켓 (수정 {args.min_age:.0f}–{args.max_age:.0f}개월 전)")
+    age_label = f"수정 {min_age:.0f}개월+" if max_age >= 9999 else f"수정 {min_age:.0f}–{max_age:.0f}개월 전"
+    console.print(f"필터 결과: [bold]{len(filtered)}개[/bold] 티켓 ({age_label})")
 
     if easy_pickings_mode:
         display_tickets(scored, top_n=args.top, title=f"Easy Pickings 추천 티켓 Top {min(args.top, len(scored))}")

@@ -116,7 +116,6 @@ def fetch_tickets(
     params = [
         ("status", "new"),
         ("status", "assigned"),
-        ("type", ticket_type),
         ("format", "csv"),
         ("max", str(max_results)),
         ("col", "id"),
@@ -127,15 +126,17 @@ def fetch_tickets(
         ("col", "version"),
         ("col", "changetime"),
         ("col", "time"),
+        ("col", "easy"),
     ]
+    if ticket_type:
+        params.append(("type", ticket_type))
+
     for s in stages:
         params.append(("stage", s))
     if has_patch:
         params.append(("has_patch", "1"))
     if patch_needs_improvement:
         params.append(("patch_needs_improvement", "1"))
-    if easy_pickings:
-        params.append(("easy_pickings", "1"))
 
     url = f"{TRAC_QUERY}?{urllib.parse.urlencode(params)}"
     req = urllib.request.Request(url, headers={"User-Agent": "django-ticket-finder/1.0"})
@@ -148,6 +149,11 @@ def fetch_tickets(
         try:
             ticket_id = int(row["id"])
         except (KeyError, ValueError):
+            continue
+
+        # Client-side easy pickings filter — Trac's CSV endpoint ignores the
+        # easy_pickings URL param, so we fetch the column and filter manually.
+        if easy_pickings and row.get("Easy pickings", "").strip() != "1":
             continue
 
         tickets.append(
