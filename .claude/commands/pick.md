@@ -1,5 +1,7 @@
 Find the best Django Trac tickets for first-time contributors and analyze each one with AI. Arguments: $ARGUMENTS
 
+First, read CONTRIBUTING_GUIDE.md in the current directory — it defines what makes a good ticket, red flags to watch for, and difficulty criteria. Use it as the basis for all analysis.
+
 The argument is the language: "ko" for Korean (default), "en" for English.
 
 ---

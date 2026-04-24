@@ -1,5 +1,7 @@
 Analyze a Django Trac ticket for first-time contributors. Arguments: $ARGUMENTS
 
+First, read CONTRIBUTING_GUIDE.md in the current directory — it defines what makes a good ticket, red flags to watch for, and difficulty criteria. Use it as the basis for your analysis.
+
 Parse the arguments: the first token is the ticket ID (number), the second optional token is the language ("ko" for Korean, "en" for English — default: "ko").
 
 Steps:
