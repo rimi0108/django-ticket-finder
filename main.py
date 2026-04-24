@@ -303,7 +303,15 @@ def display_tickets(scored: list[tuple[int, list[str], Ticket]], top_n: int, tit
         diff_detail = f" ({', '.join(diff_reasons)})" if diff_reasons else ""
         console.print(f"\n  [{color}]{i}. #{ticket.id}[/{color}] {ticket.summary}")
         console.print(f"     URL     : [underline]{ticket.url}[/underline]")
-        console.print(f"     난이도  : {diff_label}{diff_detail}")
+        if ticket.ai_difficulty:
+            ai_diff_icon = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(ticket.ai_difficulty, "")
+            console.print(f"     난이도  : {ai_diff_icon} {ticket.ai_difficulty} [dim](AI)[/dim]{diff_detail and ' / 휴리스틱: ' + diff_label}")
+        else:
+            console.print(f"     난이도  : {diff_label}{diff_detail}")
+        if ticket.ai_action:
+            console.print(f"     할 일   : [italic]{ticket.ai_action}[/italic]")
+        if ticket.ai_red_flags:
+            console.print(f"     AI경고  : [red]{' | '.join(ticket.ai_red_flags)}[/red]")
         console.print(f"     사유    : {' | '.join(reasons)}")
 
 
@@ -449,18 +457,29 @@ def _save_markdown_ko(scored, top, path, today):
         created = ticket.created.strftime("%Y-%m-%d") if ticket.created else "?"
         diff_label, diff_reasons = estimate_difficulty(ticket)
         diff_detail = f" ({', '.join(diff_reasons)})" if diff_reasons else ""
-        lines += [
+        detail = [
             f"### {i}. [{badge} #{ticket.id}] {ticket.summary}",
             "",
             f"- **링크**: {ticket.url}",
             f"- **컴포넌트**: {ticket.component}",
             f"- **상태**: {ticket.status} / {owner}",
-            f"- **난이도**: {diff_label}{diff_detail}",
+        ]
+        if ticket.ai_difficulty:
+            ai_icon = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(ticket.ai_difficulty, "")
+            detail.append(f"- **난이도 (AI)**: {ai_icon} {ticket.ai_difficulty}")
+        else:
+            detail.append(f"- **난이도**: {diff_label}{diff_detail}")
+        if ticket.ai_action:
+            detail.append(f"- **할 일 (AI)**: {ticket.ai_action}")
+        if ticket.ai_red_flags:
+            detail.append(f"- **AI 경고**: {' / '.join(ticket.ai_red_flags)}")
+        detail += [
             f"- **마지막 수정**: {modified}",
             f"- **생성일**: {created}",
             f"- **점수**: {score} ({' | '.join(reasons)})",
             "",
         ]
+        lines += detail
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
@@ -558,18 +577,29 @@ def _save_markdown_en(scored, top, path, today):
         created = ticket.created.strftime("%Y-%m-%d") if ticket.created else "?"
         diff_label, diff_reasons = estimate_difficulty(ticket)
         diff_detail = f" ({', '.join(diff_reasons)})" if diff_reasons else ""
-        lines += [
+        detail = [
             f"### {i}. [{badge} #{ticket.id}] {ticket.summary}",
             "",
             f"- **Link**: {ticket.url}",
             f"- **Component**: {ticket.component}",
             f"- **Status**: {ticket.status} / {owner}",
-            f"- **Difficulty**: {diff_label}{diff_detail}",
+        ]
+        if ticket.ai_difficulty:
+            ai_icon = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(ticket.ai_difficulty, "")
+            detail.append(f"- **Difficulty (AI)**: {ai_icon} {ticket.ai_difficulty}")
+        else:
+            detail.append(f"- **Difficulty**: {diff_label}{diff_detail}")
+        if ticket.ai_action:
+            detail.append(f"- **Action needed (AI)**: {ticket.ai_action}")
+        if ticket.ai_red_flags:
+            detail.append(f"- **AI warnings**: {' / '.join(ticket.ai_red_flags)}")
+        detail += [
             f"- **Last modified**: {modified}",
             f"- **Created**: {created}",
             f"- **Score**: {score} ({_score_reason_en(reasons)})",
             "",
         ]
+        lines += detail
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
@@ -605,12 +635,22 @@ def parse_args() -> argparse.Namespace:
                         help="댓글 수 조회 생략 (빠른 실행)")
     parser.add_argument("--easy-pickings", action="store_true",
                         help="Django 메인테이너가 '초보자 가능'으로 표시한 티켓만 검색")
+    parser.add_argument("--ai-analysis", action="store_true",
+                        help="Claude AI로 각 티켓의 난이도·레드플래그·할 일을 분석 (ANTHROPIC_API_KEY 필요)")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     easy_pickings_mode = args.easy_pickings
+
+    if args.ai_analysis:
+        from ai import check_api_key
+        if not check_api_key():
+            console.print("[red]오류:[/red] ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다.")
+            console.print("[dim]  export ANTHROPIC_API_KEY=sk-ant-...[/dim]")
+            sys.exit(1)
+        console.print("[bold magenta]AI 분석 모드[/bold magenta]: Claude Haiku로 각 티켓을 분석합니다.")
 
     if easy_pickings_mode:
         has_patch = False
@@ -665,14 +705,16 @@ def main() -> None:
     if not args.no_details:
         # 상위 후보만 상세 조회 (서버 rate limit 방지를 위해 순차 요청)
         candidates = [t for _, _, t in scored[:args.top * 2]]
+        ai_label = " + Claude AI 분석" if args.ai_analysis else ""
         console.print(
-            f"상위 {len(candidates)}개 티켓 분석 중 (댓글 수 + 레드플래그)",
+            f"상위 {len(candidates)}개 티켓 분석 중 (댓글 수 + 레드플래그{ai_label})",
             end="",
         )
         def _progress(done, total):
             if done % 5 == 0 or done == total:
                 console.print(f" {done}/{total}", end="", highlight=False)
-        enrich_tickets(candidates, delay=0.4, progress_callback=_progress)
+        enrich_tickets(candidates, delay=0.4, progress_callback=_progress,
+                       ai_analysis=args.ai_analysis)
         console.print(" [green]완료[/green]")
 
         # 댓글 수 반영해서 재스코어링

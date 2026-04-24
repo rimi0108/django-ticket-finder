@@ -120,6 +120,11 @@ python main.py --md good-tickets.md --lang en
 # Include tickets without a patch (broader search)
 python main.py --no-patch-filter
 
+# AI-powered analysis — uses Claude Haiku to assess difficulty, what to do, and red flags
+export ANTHROPIC_API_KEY=sk-ant-...
+python main.py --ai-analysis
+python main.py --ai-analysis --top 10 --md good-tickets.md
+
 # Combine options
 python main.py --unassigned-only --component admin --top 5 --md admin-tickets.md
 ```
@@ -136,6 +141,7 @@ python main.py --unassigned-only --component admin --top 5 --md admin-tickets.md
 | `--max-fetch N` | `500` | Max tickets to fetch from Trac |
 | `--no-patch-filter` | false | Disable has_patch / patch_needs_improvement filter |
 | `--easy-pickings` | false | Search tickets marked "easy pickings" by Django maintainers |
+| `--ai-analysis` | false | Use Claude Haiku AI to analyze difficulty, action needed, and red flags (`ANTHROPIC_API_KEY` required) |
 | `--md FILE` | — | Save results as a Markdown file |
 | `--lang` | `ko` | Markdown language: `ko` (Korean) or `en` (English) |
 

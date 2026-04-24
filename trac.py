@@ -76,6 +76,11 @@ class Ticket:
     version: str = ""
     num_comments: int = -1  # -1 = not fetched yet
     red_flags: list[str] = field(default_factory=list)  # list of tags
+    # AI analysis fields (populated only when --ai-analysis is used)
+    ai_difficulty: Optional[str] = None        # "easy" | "medium" | "hard"
+    ai_action: Optional[str] = None            # what the contributor needs to do
+    ai_red_flags: list[str] = field(default_factory=list)
+    ai_good_first_issue: Optional[bool] = None
 
     @property
     def is_unassigned(self) -> bool:
@@ -173,10 +178,11 @@ def fetch_tickets(
     return tickets
 
 
-def _analyze_ticket_page(ticket_id: int) -> tuple[int, list[str]]:
+def _analyze_ticket_page(ticket_id: int) -> tuple[int, list[str], str]:
     """
-    Fetch ticket page and return (comment_count, red_flag_tags).
+    Fetch ticket page and return (comment_count, red_flag_tags, stripped_text).
     Detects patterns in comments that indicate a ticket is problematic.
+    stripped_text is used for AI analysis when --ai-analysis is enabled.
     """
     url = f"{TRAC_BASE}/ticket/{ticket_id}"
     req = urllib.request.Request(url, headers={"User-Agent": "django-ticket-finder/1.0"})
@@ -184,7 +190,7 @@ def _analyze_ticket_page(ticket_id: int) -> tuple[int, list[str]]:
         with urllib.request.urlopen(req, timeout=15) as response:
             html = response.read().decode("utf-8", errors="ignore")
     except Exception:
-        return 0, []
+        return 0, [], ""
 
     comment_count = html.count('id="comment:')
 
@@ -199,19 +205,29 @@ def _analyze_ticket_page(ticket_id: int) -> tuple[int, list[str]]:
                 found_flags.append(tag)
                 break
 
-    return comment_count, found_flags
+    return comment_count, found_flags, text
 
 
 def enrich_tickets(
     tickets: list[Ticket],
     delay: float = 0.4,
     progress_callback=None,
+    ai_analysis: bool = False,
 ) -> None:
     """Fetch comment counts and red flags sequentially to avoid rate limiting."""
+    if ai_analysis:
+        from ai import analyze_with_claude
+
     for i, ticket in enumerate(tickets):
-        count, flags = _analyze_ticket_page(ticket.id)
+        count, flags, text = _analyze_ticket_page(ticket.id)
         ticket.num_comments = count
         ticket.red_flags = flags
+        if ai_analysis and text:
+            result = analyze_with_claude(text, ticket.summary, ticket.component)  # noqa: F821
+            ticket.ai_difficulty = result.get("difficulty")
+            ticket.ai_action = result.get("action_needed")
+            ticket.ai_red_flags = result.get("additional_red_flags", [])
+            ticket.ai_good_first_issue = result.get("good_first_issue")
         if progress_callback:
             progress_callback(i + 1, len(tickets))
         if i < len(tickets) - 1:
