@@ -1,8 +1,9 @@
 import csv
 import io
+import re
+import time
 import urllib.parse
 import urllib.request
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
@@ -10,8 +11,56 @@ from typing import Optional
 TRAC_BASE = "https://code.djangoproject.com"
 TRAC_QUERY = f"{TRAC_BASE}/query"
 
-# Format seen in Trac CSV: "Apr 22, 2026, 9:37:12 AM"
 _DATE_FORMAT = "%b %d, %Y, %I:%M:%S %p"
+
+# (phrases_to_match, tag, korean_label, score_penalty)
+RED_FLAGS: list[tuple[list[str], str, str, int]] = [
+    (
+        ["already fixed", "has been fixed", "this was fixed", "fixed in #", "fixed by commit",
+         "was fixed in", "this is fixed", "got fixed"],
+        "already_fixed",
+        "이미 다른 커밋/티켓으로 수정됨",
+        -60,
+    ),
+    (
+        ["duplicate of", "this is a duplicate", "it's a duplicate", "already reported"],
+        "duplicate",
+        "중복 티켓",
+        -55,
+    ),
+    (
+        ["wontfix", "won't fix", "will not fix", "not a bug", "this is by design",
+         "as designed", "this is intended behavior", "working as intended"],
+        "wontfix",
+        "수정 거부 또는 의도된 동작",
+        -55,
+    ),
+    (
+        ["closing as", "should be closed", "can be closed", "propose to close",
+         "propose closing", "suggest closing", "closing this ticket",
+         "close this ticket", "i'll close", "will close this",
+         "i would close", "should close", "marked as invalid",
+         "closing as invalid", "closing as worksforme"],
+        "closing_proposed",
+        "종료 제안됨",
+        -45,
+    ),
+    (
+        ["cannot reproduce", "can't reproduce", "no longer reproduces",
+         "unable to reproduce", "no longer an issue", "not reproducible",
+         "works in current django", "fixed in django"],
+        "cant_reproduce",
+        "재현 불가 가능성",
+        -35,
+    ),
+    (
+        ["needs design decision", "design discussion needed", "needs consensus",
+         "needs broader discussion", "django-developers", "mailing list first"],
+        "needs_consensus",
+        "커뮤니티 합의 먼저 필요",
+        -30,
+    ),
+]
 
 
 @dataclass
@@ -26,6 +75,7 @@ class Ticket:
     url: str
     version: str = ""
     num_comments: int = -1  # -1 = not fetched yet
+    red_flags: list[str] = field(default_factory=list)  # list of tags
 
     @property
     def is_unassigned(self) -> bool:
@@ -74,8 +124,8 @@ def fetch_tickets(
         ("col", "owner"),
         ("col", "component"),
         ("col", "version"),
-        ("col", "changetime"),  # "Modified" column in CSV
-        ("col", "time"),        # "Created" column in CSV
+        ("col", "changetime"),
+        ("col", "time"),
     ]
     if has_patch:
         params.append(("has_patch", "1"))
@@ -85,7 +135,7 @@ def fetch_tickets(
     url = f"{TRAC_QUERY}?{urllib.parse.urlencode(params)}"
     req = urllib.request.Request(url, headers={"User-Agent": "django-ticket-finder/1.0"})
     with urllib.request.urlopen(req, timeout=30) as response:
-        content = response.read().decode("utf-8-sig")  # strip BOM if present
+        content = response.read().decode("utf-8-sig")
 
     tickets = []
     reader = csv.DictReader(io.StringIO(content))
@@ -112,27 +162,45 @@ def fetch_tickets(
     return tickets
 
 
-def fetch_comment_count(ticket_id: int) -> int:
-    """Scrape a ticket page and count the number of comments."""
+def _analyze_ticket_page(ticket_id: int) -> tuple[int, list[str]]:
+    """
+    Fetch ticket page and return (comment_count, red_flag_tags).
+    Detects patterns in comments that indicate a ticket is problematic.
+    """
     url = f"{TRAC_BASE}/ticket/{ticket_id}"
     req = urllib.request.Request(url, headers={"User-Agent": "django-ticket-finder/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=15) as response:
             html = response.read().decode("utf-8", errors="ignore")
-        return html.count('id="comment:')
     except Exception:
-        return 0
+        return 0, []
+
+    comment_count = html.count('id="comment:')
+
+    # Strip HTML tags and normalize whitespace for pattern matching
+    text = re.sub(r"<[^>]+>", " ", html).lower()
+    text = re.sub(r"\s+", " ", text)
+
+    found_flags = []
+    for phrases, tag, _label, _penalty in RED_FLAGS:
+        for phrase in phrases:
+            if phrase in text:
+                found_flags.append(tag)
+                break
+
+    return comment_count, found_flags
 
 
-def enrich_with_comments(
+def enrich_tickets(
     tickets: list[Ticket],
-    delay: float = 0.5,
+    delay: float = 0.4,
     progress_callback=None,
 ) -> None:
-    """Fetch comment counts sequentially to avoid rate limiting."""
-    import time
+    """Fetch comment counts and red flags sequentially to avoid rate limiting."""
     for i, ticket in enumerate(tickets):
-        ticket.num_comments = fetch_comment_count(ticket.id)
+        count, flags = _analyze_ticket_page(ticket.id)
+        ticket.num_comments = count
+        ticket.red_flags = flags
         if progress_callback:
             progress_callback(i + 1, len(tickets))
         if i < len(tickets) - 1:

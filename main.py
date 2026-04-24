@@ -10,7 +10,7 @@ from rich.table import Table
 from rich import box
 from rich.text import Text
 
-from trac import Ticket, fetch_tickets, enrich_with_comments
+from trac import Ticket, fetch_tickets, enrich_tickets, RED_FLAGS
 
 console = Console()
 
@@ -109,7 +109,7 @@ def score_ticket(ticket: Ticket) -> tuple[int, list[str]]:
             score -= 5
             reasons.append(f"Django {ticket.version} 기준 제출")
 
-    # 7. Comment count (fetched separately via --details)
+    # 7. Comment count
     if ticket.num_comments >= 0:
         if ticket.num_comments >= 30:
             score -= 45
@@ -123,6 +123,15 @@ def score_ticket(ticket: Ticket) -> tuple[int, list[str]]:
         else:
             score += 5
             reasons.append(f"댓글 {ticket.num_comments}개 (논의 적음)")
+
+    # 8. Red flags from ticket content analysis
+    _penalty_map = {tag: penalty for _, tag, _, penalty in RED_FLAGS}
+    _label_map = {tag: label for _, tag, label, _ in RED_FLAGS}
+    for flag in ticket.red_flags:
+        penalty = _penalty_map.get(flag, -30)
+        label = _label_map.get(flag, flag)
+        score += penalty
+        reasons.append(f"🚨 {label} ({penalty}점)")
 
     return score, reasons
 
@@ -477,13 +486,13 @@ def main() -> None:
         # 상위 후보만 상세 조회 (서버 rate limit 방지를 위해 순차 요청)
         candidates = [t for _, _, t in scored[:args.top * 2]]
         console.print(
-            f"상위 {len(candidates)}개 티켓 댓글 수 확인 중",
+            f"상위 {len(candidates)}개 티켓 분석 중 (댓글 수 + 레드플래그)",
             end="",
         )
         def _progress(done, total):
             if done % 5 == 0 or done == total:
                 console.print(f" {done}/{total}", end="", highlight=False)
-        enrich_with_comments(candidates, delay=0.4, progress_callback=_progress)
+        enrich_tickets(candidates, delay=0.4, progress_callback=_progress)
         console.print(" [green]완료[/green]")
 
         # 댓글 수 반영해서 재스코어링
