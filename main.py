@@ -34,6 +34,58 @@ _CONSENSUS_KEYWORDS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Difficulty estimation
+# ---------------------------------------------------------------------------
+
+def estimate_difficulty(ticket: Ticket) -> tuple[str, list[str]]:
+    """
+    Return (label, reasons) where label is one of:
+      '🟢 쉬움' / '🟡 보통' / '🔴 어려움'
+    Based on component complexity, comment count, and ticket age.
+    """
+    points = 0
+    reasons: list[str] = []
+    comp = ticket.component.lower()
+
+    # Component complexity
+    if any(k in comp for k in ("database layer", "orm")):
+        points += 3
+        reasons.append("ORM/DB 코어")
+    elif any(k in comp for k in ("http handling", "cache", "signals")):
+        points += 2
+        reasons.append("HTTP/캐시/시그널 코어")
+    elif any(k in comp for k in ("migration", "auth", "serializ", "generic view")):
+        points += 1
+        reasons.append("마이그레이션/인증/직렬화")
+    # Template system, Forms, Utilities, contrib.admin, i18n, testing → base 0
+
+    # Comment count (proxy for accumulated complexity)
+    if ticket.num_comments >= 20:
+        points += 2
+        reasons.append(f"댓글 {ticket.num_comments}개 (논의 많음)")
+    elif ticket.num_comments >= 10:
+        points += 1
+        reasons.append(f"댓글 {ticket.num_comments}개")
+
+    # Ticket age (older = more code drift and context to absorb)
+    if ticket.created:
+        age_years = (datetime.now(timezone.utc) - ticket.created).days / 365
+        if age_years >= 7:
+            points += 2
+            reasons.append(f"생성 {age_years:.0f}년 전 (맥락 파악 어려움)")
+        elif age_years >= 4:
+            points += 1
+            reasons.append(f"생성 {age_years:.0f}년 전")
+
+    if points <= 1:
+        return "🟢 쉬움", reasons
+    elif points <= 3:
+        return "🟡 보통", reasons
+    else:
+        return "🔴 어려움", reasons
+
+
 def score_ticket(ticket: Ticket) -> tuple[int, list[str]]:
     """Return (score, reasons). Higher score = better candidate."""
     score = 0
@@ -210,11 +262,12 @@ def display_tickets(scored: list[tuple[int, list[str], Ticket]], top_n: int, tit
     has_comments = any(t.num_comments >= 0 for _, _, t in scored[:top_n])
 
     table.add_column("점수", justify="center", width=6)
+    table.add_column("난이도", justify="center", width=6)
     table.add_column("ID", justify="right", width=7)
-    table.add_column("요약", width=46)
-    table.add_column("컴포넌트", width=18)
+    table.add_column("요약", width=42)
+    table.add_column("컴포넌트", width=16)
     table.add_column("상태/담당자", width=14)
-    table.add_column("수정", width=10)
+    table.add_column("수정", width=9)
     if has_comments:
         table.add_column("댓글", justify="center", width=5)
 
@@ -222,13 +275,15 @@ def display_tickets(scored: list[tuple[int, list[str], Ticket]], top_n: int, tit
         color = _score_color(score)
         owner_label = "미할당" if ticket.is_unassigned else ticket.owner[:12]
         status_text = f"{ticket.status}\n[dim]{owner_label}[/dim]"
-        summary = ticket.summary if len(ticket.summary) <= 46 else ticket.summary[:43] + "..."
+        summary = ticket.summary if len(ticket.summary) <= 42 else ticket.summary[:39] + "..."
+        diff_label, _ = estimate_difficulty(ticket)
 
         row = [
             Text(str(score), style=f"bold {color}"),
+            diff_label,
             f"[link={ticket.url}]#{ticket.id}[/link]",
             summary,
-            ticket.component[:18],
+            ticket.component[:16],
             status_text,
             _age_label(ticket.modified_days_ago),
         ]
@@ -244,9 +299,12 @@ def display_tickets(scored: list[tuple[int, list[str], Ticket]], top_n: int, tit
     console.print("\n[bold cyan]추천 티켓 상세:[/bold cyan]")
     for i, (score, reasons, ticket) in enumerate(scored[:top_n], 1):
         color = _score_color(score)
+        diff_label, diff_reasons = estimate_difficulty(ticket)
+        diff_detail = f" ({', '.join(diff_reasons)})" if diff_reasons else ""
         console.print(f"\n  [{color}]{i}. #{ticket.id}[/{color}] {ticket.summary}")
-        console.print(f"     URL : [underline]{ticket.url}[/underline]")
-        console.print(f"     사유: {' | '.join(reasons)}")
+        console.print(f"     URL     : [underline]{ticket.url}[/underline]")
+        console.print(f"     난이도  : {diff_label}{diff_detail}")
+        console.print(f"     사유    : {' | '.join(reasons)}")
 
 
 # ---------------------------------------------------------------------------
@@ -370,16 +428,17 @@ def _save_markdown_ko(scored, top, path, today):
         "",
         f"## 추천 티켓 Top {top}",
         "",
-        "| 순위 | 점수 | 티켓 | 컴포넌트 | 상태 | 마지막 수정 | 비고 |",
-        "|------|------|------|----------|------|-------------|------|",
+        "| 순위 | 점수 | 난이도 | 티켓 | 컴포넌트 | 상태 | 마지막 수정 | 비고 |",
+        "|------|------|--------|------|----------|------|-------------|------|",
     ]
     for i, (score, reasons, ticket) in enumerate(scored[:top], 1):
         badge = _score_badge(score)
         owner = "미할당" if ticket.is_unassigned else ticket.owner
         modified = ticket.modified.strftime("%Y-%m-%d") if ticket.modified else "?"
         note = " / ".join(reasons)
+        diff_label, diff_reasons = estimate_difficulty(ticket)
         lines.append(
-            f"| {i} | {badge} {score} | [#{ticket.id}]({ticket.url}) {ticket.summary} | "
+            f"| {i} | {badge} {score} | {diff_label} | [#{ticket.id}]({ticket.url}) {ticket.summary} | "
             f"{ticket.component} | {ticket.status} / {owner} | {modified} | {note} |"
         )
     lines += ["", "---", "", "## 상세", ""]
@@ -388,12 +447,15 @@ def _save_markdown_ko(scored, top, path, today):
         owner = "미할당" if ticket.is_unassigned else ticket.owner
         modified = ticket.modified.strftime("%Y-%m-%d") if ticket.modified else "?"
         created = ticket.created.strftime("%Y-%m-%d") if ticket.created else "?"
+        diff_label, diff_reasons = estimate_difficulty(ticket)
+        diff_detail = f" ({', '.join(diff_reasons)})" if diff_reasons else ""
         lines += [
             f"### {i}. [{badge} #{ticket.id}] {ticket.summary}",
             "",
             f"- **링크**: {ticket.url}",
             f"- **컴포넌트**: {ticket.component}",
             f"- **상태**: {ticket.status} / {owner}",
+            f"- **난이도**: {diff_label}{diff_detail}",
             f"- **마지막 수정**: {modified}",
             f"- **생성일**: {created}",
             f"- **점수**: {score} ({' | '.join(reasons)})",
@@ -475,16 +537,17 @@ def _save_markdown_en(scored, top, path, today):
         "",
         f"## Top {top} Recommended Tickets",
         "",
-        "| Rank | Score | Ticket | Component | Status | Last Modified | Notes |",
-        "|------|-------|--------|-----------|--------|---------------|-------|",
+        "| Rank | Score | Difficulty | Ticket | Component | Status | Last Modified | Notes |",
+        "|------|-------|------------|--------|-----------|--------|---------------|-------|",
     ]
     for i, (score, reasons, ticket) in enumerate(scored[:top], 1):
         badge = _score_badge(score)
         owner = "unassigned" if ticket.is_unassigned else ticket.owner
         modified = ticket.modified.strftime("%Y-%m-%d") if ticket.modified else "?"
         note = _score_reason_en(reasons)
+        diff_label, _ = estimate_difficulty(ticket)
         lines.append(
-            f"| {i} | {badge} {score} | [#{ticket.id}]({ticket.url}) {ticket.summary} | "
+            f"| {i} | {badge} {score} | {diff_label} | [#{ticket.id}]({ticket.url}) {ticket.summary} | "
             f"{ticket.component} | {ticket.status} / {owner} | {modified} | {note} |"
         )
     lines += ["", "---", "", "## Details", ""]
@@ -493,12 +556,15 @@ def _save_markdown_en(scored, top, path, today):
         owner = "unassigned" if ticket.is_unassigned else ticket.owner
         modified = ticket.modified.strftime("%Y-%m-%d") if ticket.modified else "?"
         created = ticket.created.strftime("%Y-%m-%d") if ticket.created else "?"
+        diff_label, diff_reasons = estimate_difficulty(ticket)
+        diff_detail = f" ({', '.join(diff_reasons)})" if diff_reasons else ""
         lines += [
             f"### {i}. [{badge} #{ticket.id}] {ticket.summary}",
             "",
             f"- **Link**: {ticket.url}",
             f"- **Component**: {ticket.component}",
             f"- **Status**: {ticket.status} / {owner}",
+            f"- **Difficulty**: {diff_label}{diff_detail}",
             f"- **Last modified**: {modified}",
             f"- **Created**: {created}",
             f"- **Score**: {score} ({_score_reason_en(reasons)})",
