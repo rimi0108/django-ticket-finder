@@ -75,13 +75,21 @@ def score_ticket(ticket: Ticket) -> tuple[int, list[str]]:
             score -= 5
             reasons.append(f"생성 {created_years:.0f}년 전")
 
-    # 3. Assignment status — unassigned is the strongest positive signal
+    # 3. Assignment status — stale assigned tickets are treated leniently
+    #    because the assignee has likely moved on if untouched for 6+ months
     if ticket.is_unassigned:
         score += 35
         reasons.append("미할당")
     else:
-        score -= 25
-        reasons.append(f"할당됨: {ticket.owner}")
+        if months >= 6:
+            score -= 10
+            reasons.append(f"할당됨: {ticket.owner} (장기 미활동 — 담당자 이탈 가능성)")
+        elif months >= 3:
+            score -= 20
+            reasons.append(f"할당됨: {ticket.owner} (진행 중일 수 있음)")
+        else:
+            score -= 25
+            reasons.append(f"할당됨: {ticket.owner}")
 
     # 4. Complex environment setup detection
     text = (ticket.summary + " " + ticket.component).lower()
@@ -277,6 +285,8 @@ def _score_reason_en(reasons: list[str]) -> str:
         "개월 전 (오래됨)": "mo ago (old)",
         "개월 전 (매우 오래됨)": "mo ago (very old)",
         "개월 전 (최근 활동 있음 - 주의)": "mo ago (recently active — caution)",
+        " (장기 미활동 — 담당자 이탈 가능성)": " (stale — assignee likely gone)",
+        " (진행 중일 수 있음)": " (may still be in progress)",
         "할당됨: ": "assigned: ",
     }
     result = []
@@ -323,7 +333,9 @@ def _save_markdown_ko(scored, top, path, today):
         "| 점수 | 조건 |",
         "|------|------|",
         "| +35 | 미할당 |",
-        "| -25 | 담당자 있음 |",
+        "| -10 | 담당자 있음 + 수정 6개월 이상 전 (담당자 이탈 가능성 높음) |",
+        "| -20 | 담당자 있음 + 수정 3~6개월 전 (진행 중일 수 있음) |",
+        "| -25 | 담당자 있음 + 수정 3개월 미만 (현재 진행 중) |",
         "",
         "### 댓글 수",
         "",
@@ -426,7 +438,9 @@ def _save_markdown_en(scored, top, path, today):
         "| Score | Condition |",
         "|-------|-----------|",
         "| +35 | Unassigned |",
-        "| −25 | Already assigned |",
+        "| −10 | Assigned + modified 6+ months ago (assignee likely moved on) |",
+        "| −20 | Assigned + modified 3–6 months ago (may still be in progress) |",
+        "| −25 | Assigned + modified < 3 months ago (actively being worked on) |",
         "",
         "### Comment Count",
         "",
