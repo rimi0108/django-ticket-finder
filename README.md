@@ -28,14 +28,59 @@ These tickets are low-competition and have a clear path to completion.
 
 ## Scoring
 
+### Last Modified
+
 | Score | Condition |
 |-------|-----------|
-| +50 | Modified 6–12 months ago (Vulture sweet spot) |
-| +35 | Modified 12–24 months ago (still good) |
+| +50 | Modified 6–12 months ago (Vulture sweet spot — original author likely moved on) |
+| +35 | Modified 12–24 months ago (Vulture good) |
 | +15 | Modified 24–48 months ago (older) |
-| +20 | Unassigned |
-| −30 | Modified < 6 months ago (too recently active) |
-| −10 | Already assigned to someone |
+| +5  | Modified 48+ months ago |
+| −30 | Modified < 6 months ago (recently active — someone may be working on it) |
+
+### Creation Date
+
+| Score | Condition |
+|-------|-----------|
+| −5  | Created 3+ years ago |
+| −20 | Created 5+ years ago (old ticket) |
+| −40 | Created 8+ years ago (long history, hard to catch up) |
+
+### Assignment
+
+| Score | Condition |
+|-------|-----------|
+| +35 | Unassigned |
+| −25 | Already assigned |
+
+### Comment Count
+
+| Score | Condition |
+|-------|-----------|
+| +5  | 0–7 comments (easy to follow) |
+| −10 | 8–14 comments |
+| −25 | 15–29 comments (complex discussion) |
+| −45 | 30+ comments (very complex — avoid) |
+
+### Other Penalties
+
+| Score | Condition |
+|-------|-----------|
+| −15 | Filed against Django 1.x (old version) |
+| −5  | Filed against Django 2.x |
+| −25 | Complex environment required (Oracle, Docker, etc.) |
+| −20 | Possible community consensus needed (RFC, design discussion, etc.) |
+
+### Red Flags (auto-detected from ticket content)
+
+| Score | Condition |
+|-------|-----------|
+| −60 | Already fixed by another commit/ticket |
+| −55 | Duplicate ticket |
+| −55 | Wontfix / working as intended |
+| −45 | Closing proposed |
+| −35 | Cannot reproduce |
+| −30 | Community consensus required first |
 
 ## Installation
 
